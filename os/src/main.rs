@@ -5,8 +5,10 @@
 #![feature(map_try_insert)]
 #![feature(vec_into_raw_parts)]
 #![allow(unused)]
-
-
+#![feature(core_intrinsics)]
+#![feature(error_in_core)]
+#![feature(associated_type_bounds)]
+#![feature(trait_upcasting)]
 extern crate alloc;
 extern crate rv_plic;
 
@@ -38,6 +40,7 @@ mod trap;
 mod uart;
 mod trace;
 mod lkm;
+mod drivers;
 
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.asm"));
@@ -75,7 +78,6 @@ pub fn rust_main(hart_id: usize) -> ! {
             "boot_stack {:#x} top {:#x}",
             boot_stack as usize, boot_stack_top as usize
         );
-
         debug!("trying to add initproc");
         task::add_initproc();
         debug!("initproc added to task manager!");
@@ -111,12 +113,12 @@ pub fn rust_main(hart_id: usize) -> ! {
 
     println_hart!("Hello", hart_id);
 
-    timer::set_next_trigger();
-
     if hart_id == 0 {
-        loader::list_apps();
+        fs::list_apps();
+        // TODO 为什么在内核态可以正常读取内容，但是从用户态转到内核态后无法进行读取
+        // fs::read_all_file();
     }
-
+    timer::set_next_trigger();
     task::run_tasks();
     panic!("Unreachable in rust_main!");
 }

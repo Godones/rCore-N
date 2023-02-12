@@ -1,11 +1,27 @@
 use core::cmp::min;
 
-use crate::fs::{make_pipe, File};
+use crate::fs::{make_pipe, File, OpenFlags, open_file};
 use crate::task::{current_process, current_task, current_user_token};
 use crate::{
     mm::{translated_byte_buffer, translated_refmut, UserBuffer},
     // task::find_task,
 };
+use crate::mm::translated_str;
+
+pub fn sys_open(path: *const u8, flags: u32) -> isize {
+    let process = current_process().unwrap();
+    let token = current_user_token();
+    let path = translated_str(token, path);
+    if let Some(inode) = open_file(path.as_str(), OpenFlags::from_bits(flags).unwrap()) {
+        let mut inner = process.acquire_inner_lock();
+        let fd = inner.alloc_fd();
+        inner.fd_table[fd] = Some(inode);
+        fd as isize
+    } else {
+        -1
+    }
+}
+
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
     if fd == 3 || fd == 4 || fd == 0 || fd == 1 {

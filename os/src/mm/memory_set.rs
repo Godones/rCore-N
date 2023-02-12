@@ -163,6 +163,16 @@ impl MemorySet {
             ),
             None,
         );
+        debug!("mapping virtio0");
+        memory_set.push(
+            MapArea::new(
+                (0x10_008_000 as usize).into(),
+                (0x10_008_000+0x1000 as usize).into(),
+                MapType::Mmio,
+                MapPermission::R|MapPermission::W
+            ),
+            None
+        );
         debug!("mapping uart");
         use crate::uart;
         #[cfg(any(feature = "board_qemu", feature = "board_lrv"))]

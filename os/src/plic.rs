@@ -1,7 +1,8 @@
 use crate::trace::{push_trace, S_EXT_INTR_ENTER, S_EXT_INTR_EXIT};
 use crate::trap::{push_trap_record, UserTrapRecord, USER_EXT_INT_MAP};
-use crate::uart;
+use crate::{println, uart};
 use rv_plic::{Priority, PLIC};
+use crate::drivers::QEMU_BLOCK_DEVICE;
 
 #[cfg(any(feature = "board_qemu", feature = "board_lrv"))]
 pub const PLIC_BASE: usize = 0xc00_0000;
@@ -23,6 +24,7 @@ pub fn get_context(hart_id: usize, mode: char) -> usize {
 
 #[cfg(feature = "board_qemu")]
 pub fn init() {
+    Plic::set_priority(8,Priority::lowest());
     Plic::set_priority(12, Priority::lowest());
     Plic::set_priority(13, Priority::lowest());
     Plic::set_priority(14, Priority::lowest());
@@ -40,6 +42,7 @@ pub fn init() {
 #[cfg(feature = "board_qemu")]
 pub fn init_hart(hart_id: usize) {
     let context = get_context(hart_id, 'S');
+    Plic::enable(context,8);
     Plic::enable(context, 12);
     Plic::enable(context, 13);
     Plic::enable(context, 14);
@@ -90,6 +93,10 @@ pub fn handle_external_interrupt(hart_id: usize) {
                 12 | 13 | 14 | 15 => {
                     uart::handle_interrupt(irq);
                     trace!("[PLIC] irq {:?} handled by kenel", irq);
+                }
+                8 => {
+                    println!("block irq!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    QEMU_BLOCK_DEVICE.lock().handle_irq();
                 }
                 #[cfg(feature = "board_lrv")]
                 4 | 5 | 6 | 7 => {

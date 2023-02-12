@@ -7,7 +7,6 @@
 #![feature(allocator_api)]
 #![feature(atomic_from_mut, inline_const)]
 #![deny(warnings, missing_docs)]
-
 #[macro_use]
 mod console;
 

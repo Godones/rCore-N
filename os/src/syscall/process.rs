@@ -9,6 +9,8 @@ use crate::trap::{push_trap_record, UserTrapRecord};
 use alloc::vec::Vec;
 use core::mem::size_of;
 use core::ptr::null;
+use crate::drivers::QEMU_BLOCK_DEVICE;
+use crate::fs::{open_file, OpenFlags};
 
 pub fn sys_exit(exit_code: i32) -> ! {
     exit_current_and_run_next(exit_code);
@@ -72,12 +74,15 @@ pub fn sys_fork() -> isize {
 }
 
 pub fn sys_exec(path: *const u8) -> isize {
+    QEMU_BLOCK_DEVICE.lock().write(0,[b'c';512].as_slice());
     let token = current_user_token();
     let path = mm::translated_str(token, path);
     debug!("EXEC {}", &path);
-    if let Some(data) = get_app_data_by_name(path.as_str()) {
+    if let Some(inode) = open_file(path.as_str(),OpenFlags::RDONLY) {
+        info!("get file ");
+        let data = inode.read_all();
         let task = current_process().unwrap();
-        task.exec(data);
+        task.exec(data.as_slice());
         0
     } else {
         warn!("exec failed!");

@@ -36,6 +36,7 @@ trait FrameAllocator {
     fn new() -> Self;
     fn alloc(&mut self) -> Option<PhysPageNum>;
     fn dealloc(&mut self, ppn: PhysPageNum);
+    fn alloc_more(&mut self, pages: usize) -> Option<Vec<PhysPageNum>>;
 }
 
 pub struct StackFrameAllocator {
@@ -79,6 +80,16 @@ impl FrameAllocator for StackFrameAllocator {
         // recycle
         self.recycled.push(ppn);
     }
+    fn alloc_more(&mut self, pages: usize) -> Option<Vec<PhysPageNum>> {
+        if self.current + pages >= self.end {
+            None
+        } else {
+            self.current += pages;
+            let arr:Vec<usize> = (1..pages + 1).collect();
+            let v = arr.iter().map(|x| (self.current - x).into()).collect();
+            Some(v)
+        }
+    }
 }
 
 type FrameAllocatorImpl = StackFrameAllocator;
@@ -102,8 +113,15 @@ pub fn frame_alloc() -> Option<FrameTracker> {
     FRAME_ALLOCATOR.lock().alloc().map(FrameTracker::new)
 }
 
-fn frame_dealloc(ppn: PhysPageNum) {
+pub fn frame_dealloc(ppn: PhysPageNum) {
     FRAME_ALLOCATOR.lock().dealloc(ppn);
+}
+
+pub fn frame_alloc_more(num: usize) -> Option<Vec<FrameTracker>> {
+    FRAME_ALLOCATOR
+        .lock()
+        .alloc_more(num)
+        .map(|x| x.iter().map(|&t| FrameTracker::new(t)).collect())
 }
 
 #[allow(unused)]

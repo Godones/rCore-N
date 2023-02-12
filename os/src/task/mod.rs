@@ -137,9 +137,13 @@ pub fn exit_current_and_run_next(exit_code: i32) {
     schedule(&mut _unused as *mut _);
 }
 
+use crate::fs::{open_file,OpenFlags,};
 lazy_static! {
-    pub static ref INITPROC: Arc<ProcessControlBlock> =
-        ProcessControlBlock::new(get_app_data_by_name("initproc").unwrap());
+    pub static ref INITPROC: Arc<ProcessControlBlock> ={
+        let inode   = open_file("initproc",OpenFlags::RDONLY).unwrap();
+        let data = inode.read_all();
+        ProcessControlBlock::new(data.as_slice())
+    };
 }
 
 pub fn add_initproc() {

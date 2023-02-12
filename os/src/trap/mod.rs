@@ -20,7 +20,7 @@ global_asm!(include_str!("trap.asm"));
 
 pub fn init() {
     unsafe {
-        sie::set_stimer();
+        // sie::set_stimer();
         sie::set_sext();
         sie::set_ssoft();
         sideleg::set_usoft();
@@ -100,6 +100,7 @@ pub fn trap_handler() -> ! {
             exit_current_and_run_next(-3);
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            error!("timer interrupt");
             // let current_time = time::read();
             let mut timer_map = TIMER_MAP[hart_id()].lock();
             // debug!("test");

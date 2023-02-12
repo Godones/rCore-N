@@ -3,3 +3,5 @@ Cargo.lock
 debug.log
 src/link_app.S
 
+fs.img
+.idea

@@ -1,6 +1,6 @@
-QEMU := "../../qemu-build/riscv64-softmmu/qemu-system-riscv64"
+QEMU := "../../qemu/qemu-5.0/riscv64-softmmu/qemu-system-riscv64"
 # machine, supervisor, user, echo1, echo2
-SERIAL_FLAGS := "-serial /dev/pts/4 -serial /dev/pts/5 -serial /dev/pts/6 -serial tcp::23334,server,nowait -serial tcp:localhost:23334"
+SERIAL_FLAGS := "-serial /dev/pts/0 -serial /dev/pts/2 -serial /dev/pts/1 -serial tcp::23334,server,nowait -serial tcp:localhost:23334"
 
 TARGET := "riscv64gc-unknown-none-elf"
 MODE := "release"
@@ -12,7 +12,7 @@ KERNEL_ELF := BUILD_PATH + "os"
 KERNEL_ASM := BUILD_PATH + "os.asm"
 KERNEL_BIN := BUILD_PATH + "os.bin"
 KERNEL_BIN_LRV := BUILD_PATH + "rcore-n.bin"
-
+IMG := "./fs.img"
 clean:
     cargo clean
     cd ../unifi-sche && cargo clean
@@ -46,9 +46,36 @@ disasm: build
 disasm_lrv: build_lrv
     {{OBJDUMP}} -S -t {{KERNEL_ELF}} > {{KERNEL_ASM}}
 
-run: build
-    {{QEMU}} -machine virt -smp 4 {{SERIAL_FLAGS}} -nographic -bios ./rustsbi-qemu.bin -device loader,file={{KERNEL_BIN}},addr=0x80200000
+fat32:
+    @if [ -e /mnt/fat32 ]; then \
+        echo "/mnt/fat32 exist"; \
+    else \
+      echo "/mnt/fat32 not exits"; \
+      sudo mkdir /mnt/fat32; \
+    fi
+    @sudo touch {{IMG}}
+    @sudo chmod 777 {{IMG}}
+    @sudo dd if=/dev/zero of={{IMG}} bs=512 count=131072
+    @sudo mkfs.fat -F 32 {{IMG}}
+    @if mountpoint -q /mnt/fat32; then \
+    		sudo umount /mnt/fat32; \
+    	fi
+    @sudo mount {{IMG}} /mnt/fat32
+    @sync
 
+
+run: fat32 build
+    {{QEMU}} \
+    -machine virt \
+    -smp 1 \
+    {{SERIAL_FLAGS}} \
+    -nographic \
+    -bios ./rustsbi-qemu.bin \
+    -device loader,file={{KERNEL_BIN}},addr=0x80200000 \
+    -drive file={{IMG}},if=none,format=raw,id=x0 \
+    -device virtio-blk-device,drive=x0
+
+#    -global virtio-mmio.force-legacy=false \
 debug_qemu: build
     {{QEMU}} -machine virt -smp 4 {{SERIAL_FLAGS}} -nographic -bios ./rustsbi-qemu.bin -device loader,file={{KERNEL_BIN}},addr=0x80200000 -d int -D debug.log
 

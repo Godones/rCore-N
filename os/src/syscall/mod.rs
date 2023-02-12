@@ -1,3 +1,4 @@
+const SYSCALL_OPEN: usize = 56;
 const SYSCALL_CLOSE: usize = 57;
 const SYSCALL_PIPE: usize = 59;
 const SYSCALL_READ: usize = 63;
@@ -53,6 +54,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
     trace!("syscall {}, args {:x?}", syscall_id, args);
     push_trace(TRACE_SYSCALL_ENTER + syscall_id);
     let ret = match syscall_id {
+        SYSCALL_OPEN => sys_open(args[0] as *const u8, args[1] as u32),
         SYSCALL_CLOSE => sys_close(args[0]),
         SYSCALL_PIPE => sys_pipe(args[0] as *mut usize),
         SYSCALL_READ => sys_read(args[0], args[1] as *const u8, args[2]),
