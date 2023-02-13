@@ -1,6 +1,6 @@
 QEMU := "../../qemu/qemu-5.0/riscv64-softmmu/qemu-system-riscv64"
 # machine, supervisor, user, echo1, echo2
-SERIAL_FLAGS := "-serial /dev/pts/0 -serial /dev/pts/2 -serial /dev/pts/1 -serial tcp::23334,server,nowait -serial tcp:localhost:23334"
+SERIAL_FLAGS := "-serial /dev/pts/0 -serial /dev/pts/4 -serial /dev/pts/1 -serial tcp::23334,server,nowait -serial tcp:localhost:23334"
 
 TARGET := "riscv64gc-unknown-none-elf"
 MODE := "release"
@@ -12,7 +12,9 @@ KERNEL_ELF := BUILD_PATH + "os"
 KERNEL_ASM := BUILD_PATH + "os.asm"
 KERNEL_BIN := BUILD_PATH + "os.bin"
 KERNEL_BIN_LRV := BUILD_PATH + "rcore-n.bin"
-IMG := "./fs.img"
+FS_IMG := "../user/target/" + TARGET + "/" + MODE + "/fs.img"
+IMG := "./fs-img"
+
 clean:
     cargo clean
     cd ../unifi-sche && cargo clean
@@ -27,11 +29,11 @@ user:
 user_lrv:
     cd ../user && make build_lrv
 
-build: user unifi-sche
-    cp src/linker-qemu.ld src/linker.ld
-    cargo build --features "board_qemu" --release
-    {{OBJCOPY}} {{KERNEL_ELF}} --strip-all -O binary {{KERNEL_BIN}}
-    rm src/linker.ld
+build: user unifi-sche fs-img
+    @cp src/linker-qemu.ld src/linker.ld
+    @cargo build --features "board_qemu" --release
+    @{{OBJCOPY}} {{KERNEL_ELF}} --strip-all -O binary {{KERNEL_BIN}}
+    @rm src/linker.ld
 
 build_lrv: user_lrv
     cp src/linker-lrv.ld src/linker.ld
@@ -63,8 +65,12 @@ fat32:
     @sudo mount {{IMG}} /mnt/fat32
     @sync
 
+fs-img:
+	@rm -f {{FS_IMG}}
+	@cd ../easy-fs-fuse && cargo run --release -- -s ../user/src/bin/ -t ../user/target/riscv64gc-unknown-none-elf/release/
 
-run: fat32 build
+
+run: build
     {{QEMU}} \
     -machine virt \
     -smp 1 \
@@ -72,7 +78,7 @@ run: fat32 build
     -nographic \
     -bios ./rustsbi-qemu.bin \
     -device loader,file={{KERNEL_BIN}},addr=0x80200000 \
-    -drive file={{IMG}},if=none,format=raw,id=x0 \
+    -drive file={{FS_IMG}},if=none,format=raw,id=x0 \
     -device virtio-blk-device,drive=x0
 
 #    -global virtio-mmio.force-legacy=false \

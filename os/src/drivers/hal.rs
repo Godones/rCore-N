@@ -1,22 +1,22 @@
 use core::intrinsics::forget;
 use core::ptr::NonNull;
-use virtio_drivers::{Hal, PhysAddr, PAGE_SIZE, BufferDirection};
+use virtio_drivers::{Hal, PhysAddr, VirtAddr};
 use crate::mm::{frame_alloc_more, frame_dealloc, PhysPageNum};
 
 pub struct HalImpl;
 
-unsafe impl Hal for HalImpl {
-    fn dma_alloc(pages: usize, _direction: BufferDirection) -> (PhysAddr, NonNull<u8>) {
+impl Hal for HalImpl {
+    fn dma_alloc(pages: usize) -> PhysAddr {
         let trakcers = frame_alloc_more(pages);
         let ppn_base = trakcers.as_ref().unwrap().last().unwrap().ppn;
         // QUEUE_FRAMES.exclusive_access().append(&mut trakcers.unwrap());
         forget(trakcers.unwrap());
         // info!("dma_alloc: {:#x}-{:#x}",ppn_base.0 << 12 ,(ppn_base.0<<12) + pages * 4096);
         let pa =  ppn_base.0 << 12;
-        (pa, NonNull::new(pa as *mut u8).unwrap())
+        pa
     }
 
-    unsafe fn dma_dealloc(paddr: PhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
+    fn dma_dealloc(paddr: PhysAddr, pages: usize) -> i32 {
         let pa = PhysAddr::from(paddr);
         let mut ppn_base: PhysPageNum = pa.into();
         for _ in 0..pages {
@@ -26,17 +26,12 @@ unsafe impl Hal for HalImpl {
         0
     }
 
-    unsafe fn mmio_phys_to_virt(paddr: PhysAddr, size: usize) -> NonNull<u8> {
-       NonNull::new(paddr as *mut u8).unwrap()
+
+    fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
+        paddr
     }
 
-    unsafe fn share(buffer: NonNull<[u8]>, direction: BufferDirection) -> PhysAddr {
-        let vaddr = buffer.as_ptr() as *mut u8 as usize;
-        // Nothing to do, as the host already has access to all memory.
+    fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
         vaddr
-    }
-
-    unsafe fn unshare(paddr: PhysAddr, buffer: NonNull<[u8]>, direction: BufferDirection) {
-
     }
 }

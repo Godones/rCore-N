@@ -74,12 +74,10 @@ pub fn sys_fork() -> isize {
 }
 
 pub fn sys_exec(path: *const u8) -> isize {
-    QEMU_BLOCK_DEVICE.lock().write(0,[b'c';512].as_slice());
     let token = current_user_token();
     let path = mm::translated_str(token, path);
     debug!("EXEC {}", &path);
     if let Some(inode) = open_file(path.as_str(),OpenFlags::RDONLY) {
-        info!("get file ");
         let data = inode.read_all();
         let task = current_process().unwrap();
         task.exec(data.as_slice());

@@ -96,7 +96,7 @@ pub fn handle_external_interrupt(hart_id: usize) {
                 }
                 8 => {
                     println!("block irq!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    QEMU_BLOCK_DEVICE.lock().handle_irq();
+                    QEMU_BLOCK_DEVICE.handle_irq();
                 }
                 #[cfg(feature = "board_lrv")]
                 4 | 5 | 6 | 7 => {

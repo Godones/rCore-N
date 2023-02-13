@@ -27,14 +27,8 @@ array-init = "2.0.0"
 heapless = "0.7.5"
 unifi-exposure = { path = "../unifi-exposure" }
 
-virtio-drivers = {git = "https://github.com/rcore-os/virtio-drivers"}
-fat32 = {path = "../../../os-module/fs/fat32"}
-fat32-trait = {path ="../../../os-module/fs/fat32-trait"}
-
-lru = "0.9.0"
-core2 = {version="0.4.0",default-features = false, features = ["nightly"]}
-dbfs = {path="../../../os-module/dbfs"}
-cfg-if = "1.0.0"
+virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers", rev = "4ee80e5" }
+easy-fs = {path = "../easy-fs"}
 
 [features]
 board_qemu = ["uart8250"]

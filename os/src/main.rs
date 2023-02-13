@@ -118,7 +118,8 @@ pub fn rust_main(hart_id: usize) -> ! {
         // TODO 为什么在内核态可以正常读取内容，但是从用户态转到内核态后无法进行读取
         // fs::read_all_file();
     }
-    timer::set_next_trigger();
+    // timer::set_next_trigger();
+    println!("entering user space");
     task::run_tasks();
     panic!("Unreachable in rust_main!");
 }

@@ -26,7 +26,7 @@ binary_lrv: elf_lrv
 fat32:
 	@$(foreach elf, $(ELFS), sudo cp $(elf) /mnt/fat32;)
 	@sync
-build: binary fat32
+build: elf
 
 build_lrv: binary_lrv
 
